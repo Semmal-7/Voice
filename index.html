@@ -1,0 +1,118 @@
+<!-- CSS Styles -->
+<style>
+  .speech {border: 1px solid #DDD; width: 300px; padding: 0; margin: 0}
+  .speech input {border: 0; width: 240px; display: inline-block; height: 30px;}
+  .speech img {float: right; width: 40px }
+</style>
+<link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.7.8/angular.min.js" integrity="sha256-23hi0Ag650tclABdGCdMNSjxvikytyQ44vYGo9HyOrU=" crossorigin="anonymous"></script>
+<!-- Search Form -->
+<body ng-app="VoiceApi">
+  
+  <div ng-controller="VoiceApiController">
+      <div class="container">
+          <form id="Speak" method="get" action="https://www.google.com/search">
+            <div class="speech">
+              <input type="text" name="q" id="transcript" placeholder="Speak" />
+              <img ng-click="speechToText()" src="https://i.imgur.com/cHidSVu.gif" />
+            </div>
+            <span class="text-primary">{{ listening }}</span>
+          </form>
+          <h2 class="heading" ng-if="showResults">Showing Results for : <span class="text-success"> {{ searchText }}</span>  </h2>
+          <table class="table table-bordered table-condensed">
+            <thead>
+                <tr>
+                  <th>Title</th>
+                  <th>Description</th>
+                  <th>Link</th>
+                </tr>
+            </thead>
+            <tbody ng-repeat="result in results">
+              <tr>
+                <td>{{ result.title }}</td>
+                <td>{{ result.description }}</td>
+                <td>{{ result.link }}</td>
+              </tr>
+            </tbody>
+          </table>
+      </div>
+  </div>
+  
+
+<script src="runtime-es2015.js" type="module"></script><script src="polyfills-es2015.js" type="module"></script><script src="runtime-es5.js" nomodule></script><script src="polyfills-es5.js" nomodule></script><script src="styles-es2015.js" type="module"></script><script src="styles-es5.js" nomodule></script><script src="vendor-es2015.js" type="module"></script><script src="main-es2015.js" type="module"></script><script src="vendor-es5.js" nomodule></script><script src="main-es5.js" nomodule></script></body>
+
+
+<script>
+  var app = angular.module('VoiceApi',[]);
+  app.controller('VoiceApiController', function($scope, $http){
+    
+    $scope.speechToText = function (){
+
+      $scope.searchText = null;
+      $scope.showResults = false;
+      $scope.listening = '';
+      $scope.results = [];
+
+      if (window.hasOwnProperty('webkitSpeechRecognition')) {
+
+          var recognition = new webkitSpeechRecognition();
+          $scope.listening = 'Please speak now..';
+
+          recognition.continuous = false;
+          recognition.interimResults = false;
+
+          recognition.lang = "en-US";
+          recognition.start();
+
+          recognition.onresult = function(e) {
+            var result = e.results[0][0].transcript;
+            document.getElementById('transcript').value = result;
+            recognition.stop();
+            $scope.searchText = result;
+            $scope.googleApi();
+            $scope.listening = '';
+          };
+
+          recognition.onerror = function(e) {
+            recognition.stop();
+          }
+
+      }
+    }
+      //This function will query the google api   
+     
+      $scope.googleApi = function (){
+
+        var api_key = 'AIzaSyAKjCDBAssx7WgYNWxk0bdovz6FJuQ3gSQ';
+        var cx = '003956996373418454308:0busojder-c';
+        var uri = 'https://www.googleapis.com/customsearch/v1';
+        if($scope.searchText===null){
+          alert('Text conversion failed..');
+          return;
+        }
+        $http({
+          method: 'GET',
+          url: uri,
+          params : {'key': api_key,'cx': cx ,'q': $scope.searchText}
+        }).then(
+          function successCallback(response){
+            $scope.showResults = true;
+            angular.forEach(response.data.items, function(value, key){
+              this.push({
+                title: value.title,
+                description: value.snippet,
+                link: value.link,
+              });
+            }, $scope.results);            
+          },
+          function errorCallback(response){
+            console.log(response);
+          }
+
+        );
+
+
+      }
+
+  });
+</script>
